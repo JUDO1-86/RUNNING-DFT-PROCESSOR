@@ -1,11 +1,3 @@
-// Iterative vectoring CORDIC (circular), gives the magnitude of (x_in, y_in).
-// The output is NOT divided by the CORDIC gain, so
-//     mag = K * sqrt(x_in^2 + y_in^2),   K = 1.6467602581 (same as the paper).
-// Only the magnitude is computed, so if x_in is negative both inputs are
-// negated first (this does not change the magnitude and keeps the CORDIC
-// inside its convergence range).
-//
-// timing: pulse start for one clock, done is high ITER clocks after the clock that sampled start.
 module cordic_vector #(
     parameter W    = 22,
     parameter ITER = 16
@@ -50,7 +42,6 @@ module cordic_vector #(
             busy <= 1'b1;
         end
         else if (busy) begin
-            // drive y towards zero
             if (y >= 0) begin
                 x <= x + y_sh;
                 y <= y - x_sh;
@@ -67,7 +58,6 @@ module cordic_vector #(
             end
         end
 
-        // after the last iteration x already holds the result
         if (busy && i == ITER-1) begin
             if (y >= 0) mag <= x + y_sh;
             else        mag <= x - y_sh;
