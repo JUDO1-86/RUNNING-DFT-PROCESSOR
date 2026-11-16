@@ -1,11 +1,3 @@
-// One running DFT processing element (PE) for a single bin.
-//
-//   F(r,k) = [ F(r-1,k) + delta_s(r) ] * exp(j*theta_k)
-//
-// Includes input registers (REG) for delta_s(r) / s(r) and feedback registers (REG)
-// for Re[F(r,k)] and Im[F(r,k)] as shown in Fig. 2 of Ray & Dhar (2019).
-// During the first N samples after reset or clear (refresh), s(r-N) is masked
-// so the PE accumulates fresh incoming samples s(r) over one full window of length N.
 module running_dft_pe #(
     parameter W                 = 22,
     parameter ITER              = 16,
@@ -17,34 +9,31 @@ module running_dft_pe #(
 (
     input                      clk,
     input                      rst_n,
-    input                      clear,       // refresh (refrsigu / refrsigl)
+    input                      clear,       
     input                      sample_en,
-    input  signed [W-1:0]      ds_re,       // delta_s(r) = s(r) - s(r-N)
+    input  signed [W-1:0]      ds_re,       
     input  signed [W-1:0]      ds_im,
-    input  signed [W-1:0]      s_re,        // s(r) alone, used during warm up
+    input  signed [W-1:0]      s_re,       
     input  signed [W-1:0]      s_im,
     input  signed [ANG_W-1:0]  theta,
-    output reg signed [W-1:0]  f_re,        // Re[F(r,k)] feedback REG
-    output reg signed [W-1:0]  f_im,        // Im[F(r,k)] feedback REG
-    output reg                 done,        // f_re/f_im just updated
-    output                     valid        // F has seen a full window since the last clear
+    output reg signed [W-1:0]  f_re,       
+    output reg signed [W-1:0]  f_im,        
+    output reg                 done,        
+    output                     valid        
 );
 
-    reg [7:0] warm_cnt;       // samples processed since clear (stops at N)
+    reg [7:0] warm_cnt;       
     reg busy;
-    reg drop;                 // clear came while the CORDIC was running, ignore its result
-
-    // Input REGs for delta_s(r) (shown in Fig. 2)
+    reg drop;                
     reg signed [W-1:0] in_reg_re, in_reg_im;
 
     wire warm = (warm_cnt < N);
     assign valid = !warm;
 
-    // Select s(r) during N-sample warm-up, delta_s(r) afterwards
+
     wire signed [W-1:0] add_re = warm ? s_re : ds_re;
     wire signed [W-1:0] add_im = warm ? s_im : ds_im;
 
-    // Adders in front of the rotational CORDIC
     wire signed [W-1:0] sum_re = f_re + add_re;
     wire signed [W-1:0] sum_im = f_im + add_im;
 
