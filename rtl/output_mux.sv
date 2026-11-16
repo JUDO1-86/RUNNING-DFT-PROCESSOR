@@ -1,5 +1,3 @@
-// Picks the real and imaginary output of the PE that is currently active.
-// sel = 0 : PE(U), sel = 1 : PE(L)
 module output_mux #(parameter W = 22)
 (
     input                 sel,
