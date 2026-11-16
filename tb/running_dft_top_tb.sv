@@ -1,12 +1,5 @@
 `timescale 1ns/1ps
-// Full architecture testbench for Architecture-1 (Ray & Dhar 2019).
-//
-// Phase 1: Feeds the paper's Section 5 test signal x(n) = sum_{k=1..7} sin(n*theta_k),
-//          N = 16, monitors bin k = 1, and compares with an ideal floating-point sliding DFT.
-//          (Automatically populates mem[] if input_re.hex is not present in the run dir.)
-// Phase 2: Feeds a full COMPLEX input signal s(n) = s_re(n) + j*s_im(n) (exercising both
-//          real and imaginary FIFOs, subtractors, and PE accumulators) and tests a Quadrant-II
-//          frequency bin (k = 5, theta_5 = 112.5 deg) to verify full-circle complex operation.
+
 module running_dft_top_tb;
 
     parameter N           = 16;
@@ -76,9 +69,6 @@ module running_dft_top_tb;
             mem_im[r] = $rtoi(val_im * 32768.0);
         end
 
-        //---------------------------------------------------------------------
-        // PHASE 1: Paper Section 5 Test Signal (k = 1, N = 16)
-        //---------------------------------------------------------------------
         theta_w = THETA_K1;
         th = 2.0 * pi / N;
         cth = $cos(th);
@@ -141,9 +131,7 @@ module running_dft_top_tb;
             errors = errors + 1; $display("error: complex error above bound %e", bound);
         end
 
-        //---------------------------------------------------------------------
-        // PHASE 2: Complex Input s_re + j*s_im & Quadrant-II Bin (k = 5, 112.5 deg)
-        //---------------------------------------------------------------------
+
         @(negedge clk);
         rst_n = 0;
         #20;
