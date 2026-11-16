@@ -1,15 +1,3 @@
-// Running DFT, Architecture-1 (iterative CORDIC) with refreshing mechanism
-// based on Ray & Dhar (2019), Fig. 2 & Section 4.1.
-//
-//   s(n) -> FIFO -> complex subtractor -> delta_s
-//        -> PE(U) / PE(L) (alternately refreshed) -> output mux -> vectoring CORDIC -> |F(r,k)|
-//
-// With quadrant pre-rotation in cordic_rotate, ALL frequency bins k = 0..N-1
-// (theta_k = 2*pi*k/N in Q3.20 radians) are supported across the full [0, 2*pi) circle.
-//
-// This file provides:
-//   1. `running_dft_top`          : Single-bin Architecture-1 (Fig. 2)
-//   2. `running_dft_all_bins_top` : N-parallel multi-bin Architecture-1 (Fig. 1 / Table 2)
 module running_dft_top #(
     parameter N                 = 16,
     parameter W                 = 22,
@@ -41,7 +29,6 @@ module running_dft_top #(
     wire u_done, l_done, u_valid, l_valid, o_valid;
     wire refresh_u, refresh_l;
 
-    // s(r) in the internal format (sign extended, 4 guard bits), used while a PE warms up
     wire signed [W-1:0] s_g_re = {{(W-16){s_re[15]}}, s_re} <<< 4;
     wire signed [W-1:0] s_g_im = {{(W-16){s_im[15]}}, s_im} <<< 4;
 
@@ -86,12 +73,10 @@ module running_dft_top #(
         .l_re(l_re), .l_im(l_im), .l_valid(l_valid),
         .o_re(f_re), .o_im(f_im), .o_valid(o_valid));
 
-    // the magnitude is started in the clock where the PEs finish a sample
     cordic_vector #(.W(W), .ITER(ITER)) vec (
         .clk(clk), .rst_n(rst_n), .start(u_done),
         .x_in(f_re), .y_in(f_im), .mag(mag), .done(mag_done));
 
-    // remember if the PE that was selected at the start was valid
     always @(posedge clk) begin
         if (!rst_n)
             mag_ok <= 1'b0;
@@ -101,11 +86,6 @@ module running_dft_top #(
 
 endmodule
 
-
-// Multi-Bin Parallel Architecture-1 (Section 4.1 & Table 2: M = N = 16 parallel bins)
-// Shares 1 sample_fifo (size N), 1 complex_subtractor (2 adders), and 1 refresh_controller,
-// while replicating PE(U), PE(L), output_mux, and cordic_vector across all N bins
-// (Total: 5N CORDICs, 4N + 2 adders, 0 multipliers, N DPRAM).
 module running_dft_all_bins_top #(
     parameter N                 = 16,
     parameter W                 = 22,
